@@ -10,15 +10,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class MaxFlowEdmondsKarp {
-    private static FastScanner in;
-
-    public static void main(String[] args) throws IOException {
-        in = new FastScanner();
-
-        FlowGraph graph = readGraph();
-        System.out.println(maxFlow(graph, 0, graph.size() - 1));
-    }
-
     private static int maxFlow(FlowGraph graph, int from, int to) {
         int flow = 0;
         List<Edge> path;
@@ -71,27 +62,14 @@ public class MaxFlowEdmondsKarp {
         return result;
     }
 
-    static FlowGraph readGraph() throws IOException {
-        int vertex_count = in.nextInt();
-        int edge_count = in.nextInt();
-        FlowGraph graph = new FlowGraph(vertex_count);
-
-        for (int i = 0; i < edge_count; ++i) {
-            int from = in.nextInt() - 1;
-            int to = in.nextInt() - 1;
-            int capacity = in.nextInt();
-            graph.addEdge(from, to, capacity);
-        }
-        return graph;
-    }
-
     static class Edge {
-        int from, to, capacity, flow;
+        int from, to, minUsed, capacity, flow;
         final int id;
 
-        public Edge(int from, int to, int capacity, int id) {
+        public Edge(int from, int to, int minUsed, int capacity, int id) {
             this.from = from;
             this.to = to;
+            this.minUsed = minUsed;
             this.capacity = capacity;
             this.flow = 0;
             this.id = id;
@@ -125,12 +103,12 @@ public class MaxFlowEdmondsKarp {
             this.edges = new ArrayList<>();
         }
 
-        public void addEdge(int from, int to, int capacity) {
+        public void addEdge(int from, int to, int minUsed, int capacity) {
             /* Note that we first append a forward edge and then a backward edge,
              * so all forward edges are stored at even indices (starting from 0),
              * whereas backward edges are stored at odd indices. */
-            Edge forwardEdge = new Edge(from, to, capacity, edges.size());
-            Edge backwardEdge = new Edge(to, from, 0, edges.size() + 1);
+            Edge forwardEdge = new Edge(from, to, minUsed, capacity, edges.size());
+            Edge backwardEdge = new Edge(to, from, 0, 0, edges.size() + 1);
             graph[from].add(edges.size());
             edges.add(forwardEdge);
             graph[to].add(edges.size());
@@ -143,6 +121,10 @@ public class MaxFlowEdmondsKarp {
 
         public int size() {
             return graph.length;
+        }
+
+        public List<Integer>[] getGraph() {
+            return graph;
         }
 
         public List<Integer> getIds(int from) {
@@ -173,24 +155,5 @@ public class MaxFlowEdmondsKarp {
         }
     }
 
-    static class FastScanner {
-        private BufferedReader reader;
-        private StringTokenizer tokenizer;
 
-        public FastScanner() {
-            reader = new BufferedReader(new InputStreamReader(System.in));
-            tokenizer = null;
-        }
-
-        public String next() throws IOException {
-            while (tokenizer == null || !tokenizer.hasMoreTokens()) {
-                tokenizer = new StringTokenizer(reader.readLine());
-            }
-            return tokenizer.nextToken();
-        }
-
-        public int nextInt() throws IOException {
-            return Integer.parseInt(next());
-        }
-    }
 }
