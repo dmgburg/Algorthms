@@ -1,18 +1,24 @@
-import java.io.*;
+import com.sun.javafx.geom.Edge;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.StringTokenizer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-public class MaxFlowEdmondsKarp {
-    private static int maxFlow(FlowGraph graph, int from, int to) {
+import static com.sun.org.apache.xml.internal.security.keys.keyresolver.KeyResolver.iterator;
+
+class MaxFlowEdmondsKarp {
+    private static final Metric metric = new Metric();
+
+    public static int maxFlow(FlowGraph graph, int from, int to) {
+        metric.start("maxFlow");
         int flow = 0;
         List<Edge> path;
+        metric.log(graph.size() + " - " + graph.getNextEdgeNumber());
         while (true) {
             path = bfs(graph, from, to);
             if (path.size() == 0) {
@@ -20,8 +26,9 @@ public class MaxFlowEdmondsKarp {
             }
             int maxFlow = path.stream().mapToInt((edge) -> edge.capacity - edge.flow).min().getAsInt();
             path.forEach(edge -> graph.addFlow(edge, maxFlow));
-            flow+= maxFlow;
+            flow += maxFlow;
         }
+        metric.finish("maxFlow");
         return flow;
     }
 
@@ -63,13 +70,12 @@ public class MaxFlowEdmondsKarp {
     }
 
     static class Edge {
-        int from, to, minUsed, capacity, flow;
+        int from, to, capacity, flow;
         final int id;
 
-        public Edge(int from, int to, int minUsed, int capacity, int id) {
+        public Edge(int from, int to, int capacity, int id) {
             this.from = from;
             this.to = to;
-            this.minUsed = minUsed;
             this.capacity = capacity;
             this.flow = 0;
             this.id = id;
@@ -96,23 +102,31 @@ public class MaxFlowEdmondsKarp {
         /* These adjacency lists store only indices of edges from the edges list */
         private List<Integer>[] graph;
 
-        public FlowGraph(int n) {
-            this.graph = (ArrayList<Integer>[]) new ArrayList[n];
-            for (int i = 0; i < n; ++i)
+        public FlowGraph(int vertexCount) {
+            this.graph = (ArrayList<Integer>[]) new ArrayList[vertexCount];
+            for (int i = 0; i < vertexCount; ++i)
                 this.graph[i] = new ArrayList<>();
             this.edges = new ArrayList<>();
         }
 
-        public void addEdge(int from, int to, int minUsed, int capacity) {
+        public void addEdge(int from, int to, int capacity) {
             /* Note that we first append a forward edge and then a backward edge,
              * so all forward edges are stored at even indices (starting from 0),
              * whereas backward edges are stored at odd indices. */
-            Edge forwardEdge = new Edge(from, to, minUsed, capacity, edges.size());
-            Edge backwardEdge = new Edge(to, from, 0, 0, edges.size() + 1);
-            graph[from].add(edges.size());
+            Edge forwardEdge = new Edge(from, to, capacity, getNextEdgeNumber());
+            Edge backwardEdge = new Edge(to, from, 0, getNextEdgeNumber() + 1);
+            graph[from].add(getNextEdgeNumber());
             edges.add(forwardEdge);
-            graph[to].add(edges.size());
+            graph[to].add(getNextEdgeNumber());
             edges.add(backwardEdge);
+        }
+
+        public List<Edge> getEdges() {
+            return edges;
+        }
+
+        public int getNextEdgeNumber() {
+            return edges.size();
         }
 
         public int getVertexCount() {

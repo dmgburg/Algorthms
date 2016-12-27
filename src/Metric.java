@@ -11,6 +11,12 @@ class Metric {
         }
     }
 
+    public void log(String string){
+        if (debug) {
+            System.out.println(string);
+        }
+    }
+
     public void finish(String name) {
         if (debug) {
             long finished = System.currentTimeMillis();
