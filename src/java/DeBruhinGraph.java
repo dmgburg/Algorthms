@@ -28,7 +28,14 @@ class DeBruhinGraph {
                 nodes.add(new DebruinNode(prefix));
                 nodeIndexByPrefix.put(prefix, nodeIndex);
             }
-            nodes.get(nodeIndex).addDirection(read.substring(1));
+            String targetPrefix = read.substring(1);
+            Integer targetNodeIndex = nodeIndexByPrefix.get(targetPrefix);
+            if (targetNodeIndex == null) {
+                targetNodeIndex = nodes.size();
+                nodes.add(new DebruinNode(targetPrefix));
+                nodeIndexByPrefix.put(targetPrefix, targetNodeIndex);
+            }
+            nodes.get(nodeIndex).addDirection(targetPrefix, targetNodeIndex);
         }
         metric.finish("buildNodes");
         return buildGraph(nodeIndexByPrefix, nodes);
@@ -53,7 +60,7 @@ class DeBruhinGraph {
     }
 
 
-    private static class DebruinNode {
+    static class DebruinNode {
         final String prefix;
         final Map<String, Integer> directions = new HashMap<>();
         final List<String> paths = new ArrayList<>();
@@ -62,8 +69,8 @@ class DeBruhinGraph {
             this.prefix = prefix;
         }
 
-        public void addDirection(String direction) {
-            directions.putIfAbsent(direction, directions.size());
+        public void addDirection(String direction, int targetIndex) {
+            directions.putIfAbsent(direction, targetIndex);
         }
 
         @Override
