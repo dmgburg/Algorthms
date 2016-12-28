@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by Denis on 27.12.2016.
@@ -28,13 +29,7 @@ public class BubbleDetection {
     }
 
     static List<Bubble> getBubbles(List<String> strings, int readLength, int threshold) {
-        List<String> reads = new ArrayList<>();
-        for (String string : strings) {
-            for (int i = 0; i <= string.length() - readLength; i++) {
-                reads.add(string.substring(i, i + readLength));
-            }
-        }
-        DeBruhinGraph dbGraph = DeBruhinGraph.build(reads);
+        DeBruhinGraph dbGraph = getDeBruhinGraph(strings, readLength);
         List<Integer>[] graph = dbGraph.graph;
         List<Integer> candidateStart = new ArrayList<>();
         for (int i = 0; i < graph.length; i++) {
@@ -59,20 +54,77 @@ public class BubbleDetection {
                     }
                     List<Integer> thatPath = foundPaths.get(j);
                     int lastIndex = thatPath.size() - 1;
-                    for (int k = lastIndex; k >= 0; k--) {
-                        Integer currNode = thatPath.get(k);
-                        if (thisPath.contains(currNode)){
-                            if (k == lastIndex){
-                                continue iterPaths; // must be disjoint paths
+                    if (Objects.equals(thatPath.get(0), thisPath.get(0))){
+                        // check that no more nodes in common
+                        for (int k = lastIndex; k > 0; k--) {
+                            Integer currNode = thatPath.get(k);
+                            if (thisPath.contains(currNode)){
+                                continue iterPaths;
                             }
-                            bubbles.add(new Bubble(start,currNode));
-                            continue iterPaths;
                         }
+                        bubbles.add(new Bubble(start,thatPath.get(0)));
                     }
+
                 }
             }
         }
+        Map<Pair,List<Bubble>> bubblesByStartEnd = new HashMap<>();
+        for (Bubble bubble : bubbles){
+            Pair key = new Pair(bubble.start, bubble.end);
+            List<Bubble> list = bubblesByStartEnd.get(key);
+            if ( list == null){
+                list = new ArrayList<>();
+                bubblesByStartEnd.put(key, list);
+            }
+            list.add(bubble);
+        }
+//        bubbles = new ArrayList<>();
+//        for (List<Bubble> list : bubblesByStartEnd.values()){
+//            if (list.size()>1){
+//                list.remove(list.size()-1);
+//            }
+//            bubbles.addAll(list);
+//        }
         return bubbles;
+    }
+
+    static DeBruhinGraph getDeBruhinGraph(List<String> strings, int readLength) {
+        List<String> reads = new ArrayList<>();
+        for (String string : strings) {
+            for (int i = 0; i <= string.length() - readLength; i++) {
+                reads.add(string.substring(i, i + readLength));
+            }
+        }
+        return DeBruhinGraph.build(reads);
+    }
+
+    private static class Pair{
+        int first;
+        int last;
+
+        public Pair(int first, int last) {
+            this.first = first;
+            this.last = last;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Pair pair = (Pair) o;
+
+            if (first != pair.first) return false;
+            return last == pair.last;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = first;
+            result = 31 * result + last;
+            return result;
+        }
     }
 
     static List<List<Integer>> dfs(List<Integer>[] graph, boolean[] used, Integer direction, int threshold, int start) {
@@ -103,10 +155,39 @@ public class BubbleDetection {
     static class Bubble {
         int start;
         int end;
+//        List<Path> paths;
 
         public Bubble(int start, int end) {
             this.start = start;
             this.end = end;
+//            this.paths = new ArrayList<>();
+//            for (List<Integer> path: lists){
+//                this.paths.add(new Path(path));
+//            }
+        }
+    }
+
+    static class Path {
+        List<Integer> path;
+
+        public Path(List<Integer> path) {
+            this.path = path;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Path path1 = (Path) o;
+
+            return path != null ? path.equals(path1.path) : path1.path == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            return path != null ? path.hashCode() : 0;
         }
     }
 }
@@ -158,7 +239,7 @@ class DeBruhinGraph {
     }
 
 
-    private static class DebruinNode {
+    static class DebruinNode {
         final String prefix;
         final Map<String, Integer> directions = new HashMap<>();
         final List<String> paths = new ArrayList<>();
